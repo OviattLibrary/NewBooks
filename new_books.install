@@ -1,0 +1,198 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the new books module.
+ */
+
+/**
+ * Implements hook_install()
+ * Creates a writable directory to store our processed thumbnails
+ */
+function new_books_install() {
+  // Create the new books thumbnails directory and ensure that it is writable
+  $dir = file_default_scheme() . '://new_books_thumbnails';
+  file_prepare_directory($directory, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS);
+
+  //Automatically set created datetime for current timestamp upon insert
+  $query = db_query('
+    CREATE TRIGGER add_book BEFORE INSERT ON new_books FOR EACH ROW BEGIN SET
+      NEW.created=NOW(); END
+  ');
+
+  //Automatically update 'updated' to current timestamp whenever a row is changed
+  $query = db_query('
+    ALTER TABLE new_books
+    MODIFY updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  ');
+}
+
+/**
+ * Implements hook_uninstall()
+ * Removes the new_books table
+ * @todo delete the new books thumbnails folder in sites/default/files
+ */
+function new_books_uninstall() {
+  // Uninstall all of our saved variables
+  //variable_del('new_books_thumbnails_title');
+  //variable_del('new_books_thumbnails_landing_page');
+  //variable_del('new_books_rss_feed');
+  //variable_del('new_books_num_items');
+
+  // Drop our New Books Data Table
+  $table = 'new_books';
+  db_drop_table($table);
+}
+
+/**
+ * Implements hook_schema()
+ * Creates a table and fields in our database to store our new books data
+ */
+function new_books_schema() {
+  $schema['new_books'] = array(
+    'description' => 'The base table for New Books data.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Primary key for New Book entries.',
+        'type'        => 'serial',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+      ),
+      'title' => array(
+        'description' => 'The book title.',
+        'type'        => 'varchar',
+        'length'      => 1000,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'author' => array(
+        'description' => 'The author of the book.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'isbn' => array(
+        'description' => 'The ISBN number(s) for the book.',
+        'type'        => 'varchar',
+        'length'      => 1000,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'mms_id' => array(
+        'description' => 'The MMS_ID for the book.',
+        'type'        => 'varchar',
+        'length'      => 50,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'publisher' => array(
+        'description' => 'The publisher of the book.',
+        'type'        => 'varchar',
+        'length'      => 200,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'subjects' => array(
+        'description' => 'The different subjects attributed to the book.',
+        'type'        => 'varchar',
+        'length'      => 1000,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'fund_ledger_code' => array(
+        'description' => 'The fund information for the book.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'permanent_call_number' => array(
+        'description' => 'The call number of the book.',
+        'type'        => 'varchar',
+        'length'      => 150,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'library_name' => array(
+        'description' => 'Name of library where book resides',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'location_name' => array(
+        'description' => 'Location where book is found.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'group_subject' => array(
+        'description' => 'General subject of the book.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'publication_date' => array(
+        'description' => 'The publication date of the book.',
+        'type'        => 'varchar',
+        'length'      => 50,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'img_url' => array(
+        'description' => 'The URL of the image',
+        'type'        => 'varchar',
+        'length'      => 300,
+        'default'     => '',
+      ),
+      'creation_date' => array(
+        'description' => 'The date the book was inserted/updated in the system.',
+        'type'        => 'varchar',
+        'length'      => 50,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'created' => array(
+        'description' => 'The date the book row was created in the table',
+        'type'        => 'datetime',
+        'mysql_type'  => 'datetime',
+        'not null'    => TRUE,
+        'default'     => format_date(time(), 'custom', 'Y-m-d 00:00:00'),
+      ),
+      'updated' => array(
+        'description' => 'The date the book was updated/modified in the table.',
+        'type'        => 'timestamp',
+        'mysql_type'  => 'timestamp',
+        'not null'    => TRUE,
+      ),
+    ),
+    'indexes' => array(
+      'title' => array(
+        'title',
+      ),
+      'author' => array(
+        'author',
+      ),
+      'isbn' => array(
+        'isbn',
+      ),
+      'mms_id' => array(
+        'mms_id',
+      ),
+      'group_subject' => array(
+        'group_subject',
+      ),
+      'img_url' => array(
+        'img_url',
+      ),
+    ),
+    'primary key' => array(
+      'id',
+    ),
+  );
+
+  return $schema;
+}

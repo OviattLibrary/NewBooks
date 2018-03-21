@@ -1,0 +1,235 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * New Books module file
+ *
+ * This module fetches a list of newly acquired books from the library
+ * and also displays the list to a page
+ */
+
+/**
+ * Implements hook_help()
+ */
+function new_books_help($path, $arg) {
+  if ($path === 'admin/help#new_books') {
+    return t ('New Books module gets, stores, and displays newly acquired books');
+  }
+}
+
+/**
+ * Function new_books_fetch_list()
+ *
+ * Calls books API to get a list of newly acquired books.
+ * Stores the results into the database.
+ */
+function new_books_fetch_list() {
+ 
+}
+function new_books_show_filter_options() {
+  $query = db_select('new_books', 'n');
+  $query->fields('n', array(
+    'fund_ledger_code',
+  ));
+  $query->groupBy('fund_ledger_code');
+  $query->orderBy('fund_ledger_code', 'ASC');
+
+  $fund_ledger_codes = $query->execute();
+
+  $html = '<select class="form-control" id="books_dropdown"><option>All</option>';
+  foreach ($fund_ledger_codes as $item) {
+    $html .= '<option>' . htmlspecialchars($item->fund_ledger_code) . '</option>';
+  }
+  $html .= '</select>';
+
+  print $html;
+}
+function new_books_page($get_params = null) {
+
+  $filter_field;
+  $filter_value;;
+
+  if ($get_params !== null && !empty($get_params['filter_field']) && !empty($get_params['filter_value'])) {
+    $filter_field = $get_params['filter_field'];
+    $filter_value = $get_params['filter_value'];
+  }
+  $num_per_page = 8;
+
+  $query = db_select('new_books', 'n')->extend('PagerDefault')
+  ->fields('n', array(
+    'id',
+    'title',
+    'author',
+    'isbn',
+    'mms_id',
+    'fund_ledger_code',
+  ))->limit($num_per_page);
+  if (!empty($filter_field) && !empty($filter_value)) {
+    switch ($filter_field) {
+      case 'fund_ledger_code':
+        if ($filter_value !== 'All') {
+          $query->condition('fund_ledger_code', $filter_value);
+        }
+        break;
+      
+      default:
+        # code...
+        break;
+    }
+  }
+
+  $results = $query->execute();
+  $total = $query->countQuery()->execute()->fetchField();
+
+  $rows = array();
+
+  foreach ($results as $row) {
+    $html = '
+      <div class="col-sm-3" style="margin-bottom: 16px;">
+        <div style="height: 100%; padding: 8px; margin: 12px;">
+          <div style="display: flex; flex-direction: column; text-align: center;">
+            <div style="flex: 0 1 50%; margin-bottom: 16px;">
+              <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">
+                <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
+              </a>
+            </div>
+            <div style="flex: 0 1 50%;">
+              <p class="bold">
+                <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
+              </p>
+              <p>' . $row->fund_ledger_code . '</p>
+            </div>          
+          </div>
+        </div>
+      </div>
+    ';
+    $rows[] = $html;
+  }
+
+  //$total = 57;
+  //$num_per_page = 10;
+  //$page = pager_default_initialize($total, $num_per_page);
+  $output = theme('pager');
+  print $output;
+
+  $page_items = theme('new_books_custom', array(
+    'items' => $rows,
+  ));
+  print "<div class=\"new-book-items row\" style=\"display: flex; flex-wrap: wrap;\">" . $page_items . "</div>";
+
+
+  $output = theme('pager');
+  print $output;
+
+
+    //print theme('pager', array('quantity', array('result' => $results)));
+}
+
+function new_books_theme() {
+  $themes = array(
+    'new_books_custom' => array(
+      'template' => 'page--new_books',
+      'variables' => array('items' => null),
+    ),
+  );
+  return $themes;
+}
+
+function new_books_insert_list() {
+  // First clear the data from the DB
+  $query = db_truncate('new_books');
+  $query->execute();
+  $data = array(
+    array(
+      'title' => 'The Knight',
+      'author' => 'Douglas, Arthur',
+      'isbn' => '12345678',
+      'mms_id' => '01ALMA_12345',
+      'publisher' => 'Milton',
+      'subjects' => implode(",", array(
+        'Drugs--Side effects--Fiction.',
+        'Drugs--Fiction.',
+        'Scientists--Fiction.',
+      )),
+      'permanent_call_number' => '1F 01 3.34',
+      'library_name' => 'Oviatt Library',
+      'location_name' => 'Reading room',
+      'publication_date' => 'November 5, 1955',
+      'creation_date' => 'January 5, 2018',
+    ),
+    array(
+      'title' => 'The Sword in the Word',
+      'author' => 'Eldridge, Arthur',
+      'isbn' => '23541945',
+      'mms_id' => '01ALMA_546165',
+      'publisher' => 'Milton',
+      'subjects' => 'Fantasy',
+      'permanent_call_number' => '3G M.2 355',
+      'library_name' => 'Oviatt Library',
+      'location_name' => 'Reading room',
+      'publication_date' => 'November 5, 1955',
+      'creation_date' => 'January 10, 2018',
+    ),
+  );
+  $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
+
+  $query_params = array(
+    'path' => 'new-books',
+  );
+
+  $full_url = $api_url . '?' . drupal_http_build_query($query_params);
+
+  $response = drupal_http_request($full_url);
+  $json = json_decode($response->data);
+
+  
+
+  foreach ($json->items as $k => $v) {
+    //print $k . ".";
+    //print "<pre>"; print_r($v); print "</pre>";
+    $zero = '0';
+    unset($v->$zero);
+    if ($v->group1) {
+      //print "Group1: " . $v->group1;
+      $v->group_subject = $v->group1;
+      unset($v->group1);
+    }
+  }
+  foreach ($json->items as $item) {
+    foreach ($item as $k => $obj) {
+      //print "<pre>"; print_r($obj); print "</pre>";
+      $item->author = 'The Author';
+      $item->publisher = 'The Publisher';
+      if (is_array($obj)) {
+        //print $k;
+        //print_r($item->$k);
+        $item->$k = implode("; ", $obj);
+        //print_r($item->$k);
+      }
+    }
+  }
+  foreach ($json->items as $k => $v) {
+    //print $k . ".";
+    //print "<pre>"; print_r($v); print "</pre>";
+  }
+
+  $query = db_insert('new_books');
+  $query->fields(array('isbn', 'author', 'title', 'mms_id', 'publisher', 'subjects', 'permanent_call_number', 'library_name', 'location_name', 'publication_date', 'creation_date', 'fund_ledger_code'));
+  // foreach ($data as $record) {
+  //   $query->values($record);
+  // }
+  foreach ($json->items as $k => $v) {
+    $query->values(json_decode(json_encode($v), true));
+  }
+
+  $result = $query->execute();
+}
+
+/*
+ * Implements hook_cron()
+ */
+
+function new_books_cron() {
+  new_books_insert_list();
+}
