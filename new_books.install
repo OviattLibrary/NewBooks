@@ -58,6 +58,13 @@ function new_books_schema() {
         'unsigned'    => TRUE,
         'not null'    => TRUE,
       ),
+      'isbn' => array(
+        'description' => 'The ISBN number(s) for the book.',
+        'type'        => 'varchar',
+        'length'      => 1000,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
       'title' => array(
         'description' => 'The book title.',
         'type'        => 'varchar',
@@ -68,14 +75,7 @@ function new_books_schema() {
       'author' => array(
         'description' => 'The author of the book.',
         'type'        => 'varchar',
-        'length'      => 100,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'isbn' => array(
-        'description' => 'The ISBN number(s) for the book.',
-        'type'        => 'varchar',
-        'length'      => 1000,
+        'length'      => 150,
         'not null'    => TRUE,
         'default'     => '',
       ),
@@ -89,14 +89,7 @@ function new_books_schema() {
       'publisher' => array(
         'description' => 'The publisher of the book.',
         'type'        => 'varchar',
-        'length'      => 200,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'subjects' => array(
-        'description' => 'The different subjects attributed to the book.',
-        'type'        => 'varchar',
-        'length'      => 1000,
+        'length'      => 300,
         'not null'    => TRUE,
         'default'     => '',
       ),
@@ -107,29 +100,36 @@ function new_books_schema() {
         'not null'    => TRUE,
         'default'     => '',
       ),
-      'permanent_call_number' => array(
-        'description' => 'The call number of the book.',
-        'type'        => 'varchar',
-        'length'      => 150,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'library_name' => array(
-        'description' => 'Name of library where book resides',
-        'type'        => 'varchar',
-        'length'      => 100,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'location_name' => array(
-        'description' => 'Location where book is found.',
-        'type'        => 'varchar',
-        'length'      => 100,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'group_subject' => array(
+      'subject' => array(
         'description' => 'General subject of the book.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'line_reference' => array(
+        'description' => 'PO line reference of the book.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'vendor_name' => array(
+        'description' => 'Vendor of the media.',
+        'type'        => 'varchar',
+        'length'      => 200,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'simplified_fund' => array(
+        'description' => 'Simplified version of fund ledger code',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'simplified_fund_2' => array(
+        'description' => 'Usually contains words lottery and deposit',
         'type'        => 'varchar',
         'length'      => 100,
         'not null'    => TRUE,
@@ -148,8 +148,36 @@ function new_books_schema() {
         'length'      => 300,
         'default'     => '',
       ),
+      'img_path' => array(
+        'description' => 'The server path to the image',
+        'type'        => 'varchar',
+        'length'      => 300,
+        'not null'    => FALSE,
+        'default'     => '',
+      ),
+      'media_type' => array(
+        'description' => 'The type of media.',
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
       'creation_date' => array(
         'description' => 'The date the book was inserted/updated in the system.',
+        'type'        => 'varchar',
+        'length'      => 50,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'modification_date' => array(
+        'description' => 'The date the book was modified in the system.',
+        'type'        => 'varchar',
+        'length'      => 50,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'transaction_date' => array(
+        'description' => 'The date that Alma recorded payment.',
         'type'        => 'varchar',
         'length'      => 50,
         'not null'    => TRUE,
@@ -182,8 +210,8 @@ function new_books_schema() {
       'mms_id' => array(
         'mms_id',
       ),
-      'group_subject' => array(
-        'group_subject',
+      'subject' => array(
+        'subject',
       ),
       'img_url' => array(
         'img_url',
@@ -196,3 +224,17 @@ function new_books_schema() {
 
   return $schema;
 }
+
+/**
+ * Add newcol field to new_books table
+ */
+// function new_books_update_1() {
+//   $spec = array(
+//     'type'        => 'varchar',
+//     'description' => 'Image Path',
+//     'length'      => 100,
+//     'not null'    => FALSE,
+//   );
+
+//   db_add_field('new_books', 'img_path', $spec);
+// }

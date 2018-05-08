@@ -18,28 +18,19 @@ function new_books_help($path, $arg) {
   }
 }
 
-/**
- * Function new_books_fetch_list()
- *
- * Calls books API to get a list of newly acquired books.
- * Stores the results into the database.
- */
-function new_books_fetch_list() {
- 
-}
 function new_books_show_filter_options() {
   $query = db_select('new_books', 'n');
   $query->fields('n', array(
-    'fund_ledger_code',
+    'simplified_fund',
   ));
-  $query->groupBy('fund_ledger_code');
-  $query->orderBy('fund_ledger_code', 'ASC');
+  $query->groupBy('simplified_fund');
+  $query->orderBy('simplified_fund', 'ASC');
 
-  $fund_ledger_codes = $query->execute();
+  $simplified_funds = $query->execute();
 
   $html = '<select class="form-control" id="books_dropdown"><option>All</option>';
-  foreach ($fund_ledger_codes as $item) {
-    $html .= '<option>' . htmlspecialchars($item->fund_ledger_code) . '</option>';
+  foreach ($simplified_funds as $item) {
+    $html .= '<option>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
   $html .= '</select>';
 
@@ -64,6 +55,8 @@ function new_books_page($get_params = null) {
     'isbn',
     'mms_id',
     'fund_ledger_code',
+    'publication_date',
+    'simplified_fund',
   ))->limit($num_per_page);
   if (!empty($filter_field) && !empty($filter_value)) {
     switch ($filter_field) {
@@ -72,7 +65,11 @@ function new_books_page($get_params = null) {
           $query->condition('fund_ledger_code', $filter_value);
         }
         break;
-      
+      case 'simplified_fund':
+        if ($filter_value !== 'All') {
+          $query->condition('simplified_fund', $filter_value);
+        }
+        break;
       default:
         # code...
         break;
@@ -85,20 +82,25 @@ function new_books_page($get_params = null) {
   $rows = array();
 
   foreach ($results as $row) {
+    $row->isbn = explode(';', $row->isbn);
+    $row->publication_date = preg_replace('/[\[\]\.]/', '', $row->publication_date);
+    $row->author = preg_replace('/(,*-*\s*(\bauthor\b|\beditor\b)\.+,*)/', '', $row->author);
+    //print '<pre>'; print_r($row->isbn); print '</pre>';
     $html = '
       <div class="col-sm-3" style="margin-bottom: 16px;">
         <div style="height: 100%; padding: 8px; margin: 12px;">
           <div style="display: flex; flex-direction: column; text-align: center;">
             <div style="flex: 0 1 50%; margin-bottom: 16px;">
               <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">
-                <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
+                <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn[0] . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
               </a>
             </div>
             <div style="flex: 0 1 50%;">
               <p class="bold">
                 <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
               </p>
-              <p>' . $row->fund_ledger_code . '</p>
+              <p>' . ((!empty($row->author)) ? $row->author : '') . '</p> 
+              <p>' . $row->publication_date . '</p>
             </div>          
           </div>
         </div>
@@ -136,94 +138,113 @@ function new_books_theme() {
   return $themes;
 }
 
+/**
+ * Function new_books_insert_list()
+ *
+ * Calls books API to get a list of newly acquired books.
+ * Stores the results into the database.
+ */
 function new_books_insert_list() {
-  // First clear the data from the DB
-  $query = db_truncate('new_books');
-  $query->execute();
-  $data = array(
-    array(
-      'title' => 'The Knight',
-      'author' => 'Douglas, Arthur',
-      'isbn' => '12345678',
-      'mms_id' => '01ALMA_12345',
-      'publisher' => 'Milton',
-      'subjects' => implode(",", array(
-        'Drugs--Side effects--Fiction.',
-        'Drugs--Fiction.',
-        'Scientists--Fiction.',
-      )),
-      'permanent_call_number' => '1F 01 3.34',
-      'library_name' => 'Oviatt Library',
-      'location_name' => 'Reading room',
-      'publication_date' => 'November 5, 1955',
-      'creation_date' => 'January 5, 2018',
-    ),
-    array(
-      'title' => 'The Sword in the Word',
-      'author' => 'Eldridge, Arthur',
-      'isbn' => '23541945',
-      'mms_id' => '01ALMA_546165',
-      'publisher' => 'Milton',
-      'subjects' => 'Fantasy',
-      'permanent_call_number' => '3G M.2 355',
-      'library_name' => 'Oviatt Library',
-      'location_name' => 'Reading room',
-      'publication_date' => 'November 5, 1955',
-      'creation_date' => 'January 10, 2018',
-    ),
-  );
+  
   $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
 
   $query_params = array(
-    'path' => 'new-books',
+    'path' => 'new-books-combo',
+  );
+
+  $options = array(
+    'timeout' => 150.0,
   );
 
   $full_url = $api_url . '?' . drupal_http_build_query($query_params);
 
-  $response = drupal_http_request($full_url);
+  $response = drupal_http_request($full_url, $options);
   $json = json_decode($response->data);
+  $simplified_fund_str   = 'replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\')';
+  $simplified_fund_2_str = 'right(fund_ledger_code,_8)';
 
-  
+  // Process items if a valid array was returned
+  if (is_array($json->items) && count($json->items) > 0) {
+    // First clear the data from the DB
+    $query = db_truncate('new_books');
+    $query->execute();
+    
+    foreach ($json->items as $k => $item) {
+      $zero = '0';
+      unset($item->$zero);
 
-  foreach ($json->items as $k => $v) {
-    //print $k . ".";
-    //print "<pre>"; print_r($v); print "</pre>";
-    $zero = '0';
-    unset($v->$zero);
-    if ($v->group1) {
-      //print "Group1: " . $v->group1;
-      $v->group_subject = $v->group1;
-      unset($v->group1);
-    }
-  }
-  foreach ($json->items as $item) {
-    foreach ($item as $k => $obj) {
-      //print "<pre>"; print_r($obj); print "</pre>";
-      $item->author = 'The Author';
-      $item->publisher = 'The Publisher';
-      if (is_array($obj)) {
-        //print $k;
-        //print_r($item->$k);
-        $item->$k = implode("; ", $obj);
-        //print_r($item->$k);
+      // Use group1 field as group_subject field and remove it; seems like it is no longer used
+      if (!empty($item->fund_ledger_code)) {
+        $item->subject = $item->fund_ledger_code;
+      }
+      if (!empty($item->po_line_type_name)) {
+        $item->media_type = $item->po_line_type_name;
+        unset($item->po_line_type_name);
+      }
+      if (!empty($item->po_line_creation_date)) {
+        $item->creation_date = $item->po_line_creation_date;
+        unset($item->po_line_creation_date);
+      }
+      if (!empty($item->po_line_modification_date)) {
+        $item->modification_date = $item->po_line_modification_date;
+        unset($item->po_line_modification_date);
+      }
+      if (!empty($item->po_line_reference)) {
+        $item->line_reference = $item->po_line_reference;
+        unset($item->po_line_reference);
+      }
+
+      if (!empty($item->$simplified_fund_str)) {
+        //print '<pre>The receiving date str: '; print_r($item->$receiving_date_str); print '</pre>';
+        $item->simplified_fund = $item->$simplified_fund_str;
+        unset($item->$simplified_fund_str);
+      } else {
+        $item->simplified_fund = '';
+        unset($item->$simplified_fund_str);
+      }
+
+      if (!empty($item->$simplified_fund_2_str)) {
+        $item->simplified_fund_2 = $item->$simplified_fund_2_str;
+        unset($item->$simplified_fund_2_str);
+      } else {
+        $item->simplified_fund_2 = '';
+        unset($item->$simplified_fund_2_str);
+      }
+
+      if (empty($item->author)) {
+        $item->author = "No Author";
       }
     }
-  }
-  foreach ($json->items as $k => $v) {
-    //print $k . ".";
-    //print "<pre>"; print_r($v); print "</pre>";
-  }
+    foreach ($json->items as $item) {
+      //$item->author = 'The Author';
+      //$item->publisher = 'The Publisher';
 
-  $query = db_insert('new_books');
-  $query->fields(array('isbn', 'author', 'title', 'mms_id', 'publisher', 'subjects', 'permanent_call_number', 'library_name', 'location_name', 'publication_date', 'creation_date', 'fund_ledger_code'));
-  // foreach ($data as $record) {
-  //   $query->values($record);
-  // }
-  foreach ($json->items as $k => $v) {
-    $query->values(json_decode(json_encode($v), true));
-  }
+      foreach ($item as $k => $obj) {
+        if (is_array($obj)) {
+          $item->$k = implode("; ", $obj);
+        }
+      }
+    }
 
-  $result = $query->execute();
+    //print "<pre>"; print_r($json->items); print "</pre>";
+
+    $query = db_insert('new_books');
+    $query->fields(array('author', 'isbn', 'publication_date', 'mms_id', 'publisher', 'title', 'fund_ledger_code', 'subject', 'media_type', 'creation_date', 'modification_date', 'line_reference', 'transaction_date', 'vendor_name', 'simplified_fund', 'simplified_fund_2'));
+
+    // foreach ($json->items as $k => $item) {
+    //   $query->values(json_decode(json_encode($item), true));
+    // }
+    //print '<pre>';
+    for ($i = 0, $size = count($json->items); $i < $size; $i++) {
+      //print_r($json->items[$i]);
+      $query->values(json_decode(json_encode($json->items[$i]), true));
+    }
+    //print '</pre>';
+
+    $result = $query->execute();
+  } else {
+    print '<p>Unable to process items</p>';
+  }
 }
 
 /*
