@@ -57,6 +57,8 @@ function new_books_page($get_params = null) {
     'fund_ledger_code',
     'publication_date',
     'simplified_fund',
+    'img_url',
+    'img_path',
   ))->limit($num_per_page);
   if (!empty($filter_field) && !empty($filter_value)) {
     switch ($filter_field) {
@@ -78,6 +80,7 @@ function new_books_page($get_params = null) {
 
   $results = $query->execute();
   $total = $query->countQuery()->execute()->fetchField();
+  $no_book_image = 'https://csun-primo.hosted.exlibrisgroup.com/primo-explore/custom/01CALS_UNO/img/icon_book.png';
 
   $rows = array();
 
@@ -85,14 +88,17 @@ function new_books_page($get_params = null) {
     $row->isbn = explode(';', $row->isbn);
     $row->publication_date = preg_replace('/[\[\]\.]/', '', $row->publication_date);
     $row->author = preg_replace('/(,*-*\s*(\bauthor\b|\beditor\b)\.+,*)/', '', $row->author);
+
     //print '<pre>'; print_r($row->isbn); print '</pre>';
+    // <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn[0] . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
     $html = '
       <div class="col-sm-3" style="margin-bottom: 16px;">
         <div style="height: 100%; padding: 8px; margin: 12px;">
           <div style="display: flex; flex-direction: column; text-align: center;">
             <div style="flex: 0 1 50%; margin-bottom: 16px;">
               <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">
-                <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn[0] . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
+                
+                <img src="' . (filesize($row->img_path) < 2000 ? $no_book_image : $row->img_url) . '" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
               </a>
             </div>
             <div style="flex: 0 1 50%;">
@@ -112,7 +118,7 @@ function new_books_page($get_params = null) {
   //$total = 57;
   //$num_per_page = 10;
   //$page = pager_default_initialize($total, $num_per_page);
-  $output = theme('pager');
+  $output = theme('pager', array('quantity' => 5));
   print $output;
 
   $page_items = theme('new_books_custom', array(
@@ -121,7 +127,7 @@ function new_books_page($get_params = null) {
   print "<div class=\"new-book-items row\" style=\"display: flex; flex-wrap: wrap;\">" . $page_items . "</div>";
 
 
-  $output = theme('pager');
+  $output = theme('pager', array('quantity' => 5));
   print $output;
 
 
@@ -147,6 +153,27 @@ function new_books_theme() {
 function new_books_insert_list() {
   
   $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
+  $filepath = 'public://new_books_thumbnails';
+  $results_array = file_scan_directory($filepath, '/.*\.jpg$/');
+
+  //print '<pre>'; print_r($results_array); print '</pre>';
+
+  // Clear out all thumbnails first, then pull in the new images
+  foreach ($results_array as $k => $v) {
+    $file = $v->uri;
+    file_unmanaged_delete($file);
+  }
+
+  //$rand_string = new_books_random_string($name_length = 8);
+  //$filepath = 'public://new_books_thumbnails/' . $rand_string . '.jpg';
+  //$image = file_get_contents('https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/books.google.com/books/content?id=1SAvDwAAQBAJ&printsec=frontcover&img=1&zoom=5&edge=curl');
+  //$file = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
+  //$loaded_image = image_load($filepath);
+  //$thumb_image = $loaded_image;
+  //$filepath = 'https://library7.csun.edu/';
+
+  //print '<img class="img-responsive" src="' . file_create_url($filepath) . '" alt="book_cover" >';
+
 
   $query_params = array(
     'path' => 'new-books-combo',
@@ -212,8 +239,19 @@ function new_books_insert_list() {
       }
 
       if (empty($item->author)) {
-        $item->author = "No Author";
+        //$item->author = "No Author";
       }
+
+      $img_url = 'https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $item->isbn[0] . '/SC.JPG&client=primo';
+      $item->img_url = $img_url;
+
+      $rand_string = new_books_random_string($name_length = 8);
+      $filepath = 'public://new_books_thumbnails/' . $rand_string . '.jpg';
+      $image = file_get_contents($img_url);
+      $file = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
+      $filepath = '/home/httpd/pages/sites/default/files/new_books_thumbnails/' . $rand_string . '.jpg';
+      $item->img_path = $filepath;
+
     }
     foreach ($json->items as $item) {
       //$item->author = 'The Author';
@@ -229,13 +267,14 @@ function new_books_insert_list() {
     //print "<pre>"; print_r($json->items); print "</pre>";
 
     $query = db_insert('new_books');
-    $query->fields(array('author', 'isbn', 'publication_date', 'mms_id', 'publisher', 'title', 'fund_ledger_code', 'subject', 'media_type', 'creation_date', 'modification_date', 'line_reference', 'transaction_date', 'vendor_name', 'simplified_fund', 'simplified_fund_2'));
+    $query->fields(array('author', 'isbn', 'publication_date', 'mms_id', 'publisher', 'title', 'fund_ledger_code', 'subject', 'media_type', 'creation_date', 'modification_date', 'line_reference', 'transaction_date', 'vendor_name', 'simplified_fund', 'simplified_fund_2', 'img_url', 'img_path'));
 
     // foreach ($json->items as $k => $item) {
     //   $query->values(json_decode(json_encode($item), true));
     // }
     //print '<pre>';
     for ($i = 0, $size = count($json->items); $i < $size; $i++) {
+    // for ($i = 0, $size = 5; $i < $size; $i++) {
       //print_r($json->items[$i]);
       $query->values(json_decode(json_encode($json->items[$i]), true));
     }
@@ -253,4 +292,9 @@ function new_books_insert_list() {
 
 function new_books_cron() {
   new_books_insert_list();
+}
+
+function new_books_random_string($name_length = 8) {
+  $alpha_numeric = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  return substr(str_shuffle($alpha_numeric), 0, $name_length);
 }
