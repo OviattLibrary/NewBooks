@@ -28,9 +28,13 @@ function new_books_show_filter_options() {
 
   $simplified_funds = $query->execute();
 
-  $html = '<select class="form-control" id="books_dropdown"><option>All</option>';
+  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
   foreach ($simplified_funds as $item) {
-    $html .= '<option>' . htmlspecialchars($item->simplified_fund) . '</option>';
+    $pattern1 = '/[&]/';
+    $pattern2 = '/\s+/';
+    $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
+    $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
+    $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
   $html .= '</select>';
 
@@ -38,13 +42,33 @@ function new_books_show_filter_options() {
 }
 function new_books_page($get_params = null) {
 
-  $filter_field;
-  $filter_value;;
+  $filter_subject;
 
-  if ($get_params !== null && !empty($get_params['filter_field']) && !empty($get_params['filter_value'])) {
-    $filter_field = $get_params['filter_field'];
-    $filter_value = $get_params['filter_value'];
+  $query = db_select('new_books', 'n');
+  $query->fields('n', array(
+    'simplified_fund',
+  ));
+  $query->groupBy('simplified_fund');
+
+  $simplified_funds = $query->execute();
+
+  $subject_map = array();
+
+  foreach($simplified_funds as $item) {
+    $pattern1 = '/[&]/';
+    $pattern2 = '/\s+/';
+    $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
+    $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
+    //$subject_map[$item->simplified_fund] = $simplified_subject;
+    $subject_map[$simplified_subject] = $item->simplified_fund;
   }
+
+  // print '<pre>'; print_r($subject_map); print '</pre>';
+
+  if ($get_params !== null && !empty($get_params['subject'])) {
+    $filter_subject = $get_params['subject'];
+  }
+  // print 'Filter subject: ' . $subject_map[$filter_subject];
   $num_per_page = 8;
 
   $query = db_select('new_books', 'n')->extend('PagerDefault')
@@ -60,21 +84,10 @@ function new_books_page($get_params = null) {
     'img_url',
     'img_path',
   ))->limit($num_per_page);
-  if (!empty($filter_field) && !empty($filter_value)) {
-    switch ($filter_field) {
-      case 'fund_ledger_code':
-        if ($filter_value !== 'All') {
-          $query->condition('fund_ledger_code', $filter_value);
-        }
-        break;
-      case 'simplified_fund':
-        if ($filter_value !== 'All') {
-          $query->condition('simplified_fund', $filter_value);
-        }
-        break;
-      default:
-        # code...
-        break;
+
+  if (!empty($filter_subject)) {
+    if ($filter_subject !== 'All') {
+      $query->condition('simplified_fund', $subject_map[$filter_subject]);
     }
   }
 
@@ -92,20 +105,19 @@ function new_books_page($get_params = null) {
     //print '<pre>'; print_r($row->isbn); print '</pre>';
     // <img src="https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $row->isbn[0] . '/SC.JPG&client=primo" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
     $html = '
-      <div class="col-sm-3" style="margin-bottom: 16px;">
-        <div style="height: 100%; padding: 8px; margin: 12px;">
-          <div style="display: flex; flex-direction: column; text-align: center;">
-            <div style="flex: 0 1 50%; margin-bottom: 16px;">
-              <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">
-                
-                <img src="' . (filesize($row->img_path) < 2000 ? $no_book_image : $row->img_url) . '" alt="book cover" style="max-height: 105px; border: 1px solid #ddd;"/>
+      <div class="col-sm-3">
+        <div class="new-book-item-container">
+          <div class="new-book-item text-center">
+            <div style="margin-bottom: 16px;">
+              <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank" title="' . $row->title . '">
+                <img src="' . (filesize($row->img_path) < 2000 ? $no_book_image : $row->img_url) . '" alt="" />
               </a>
             </div>
-            <div style="flex: 0 1 50%;">
+            <div>
               <p class="bold">
                 <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
               </p>
-              <p>' . ((!empty($row->author)) ? $row->author : '') . '</p> 
+              ' . ((!empty($row->author)) ? '<p>' . $row->author . '</p>' : '') . ' 
               <p>' . $row->publication_date . '</p>
             </div>          
           </div>
@@ -124,7 +136,7 @@ function new_books_page($get_params = null) {
   $page_items = theme('new_books_custom', array(
     'items' => $rows,
   ));
-  print "<div class=\"new-book-items row\" style=\"display: flex; flex-wrap: wrap;\">" . $page_items . "</div>";
+  print '<div class="new-book-items row">' . $page_items . '</div>';
 
 
   $output = theme('pager', array('quantity' => 5));
