@@ -86,7 +86,7 @@ function new_books_page($get_params = null) {
   ))->limit($num_per_page);
 
   if (!empty($filter_subject)) {
-    if ($filter_subject !== 'All') {
+    if ($filter_subject !== 'all') {
       $query->condition('simplified_fund', $subject_map[$filter_subject]);
     }
   }
