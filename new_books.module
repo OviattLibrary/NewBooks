@@ -28,13 +28,13 @@ function new_books_show_filter_options() {
 
   $simplified_funds = $query->execute();
 
-  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option data-subject="all">All</option>';
+  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option value="All" data-subject="all">All</option>';
   foreach ($simplified_funds as $item) {
     $pattern1 = '/[&]/';
     $pattern2 = '/\s+/';
     $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
-    $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
+    $html .= '<option value="' . htmlspecialchars($item->simplified_fund) . '" data-subject="' . $simplified_subject . '">' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
   $html .= '</select>';
 
