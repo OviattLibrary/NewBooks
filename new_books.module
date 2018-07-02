@@ -17,7 +17,9 @@ function new_books_help($path, $arg) {
     return t ('New Books module gets, stores, and displays newly acquired books');
   }
 }
-
+/**
+ * Show list of filter options for user
+ */
 function new_books_show_filter_options() {
   $query = db_select('new_books', 'n');
   $query->fields('n', array(
