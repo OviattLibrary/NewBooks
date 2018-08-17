@@ -142,8 +142,8 @@ function new_books_page($get_params = null) {
   if ($get_params !== null) {
     if (!empty($get_params['subject'])) {
       $filter_subject = $get_params['subject'];
-    } else if (!empty($get_params['classification'])) {
-      $filter_class = $get_params['classification'];
+    } else if (!empty($get_params['lcc'])) {
+      $filter_class = $get_params['lcc'];
     }
   }
   // print 'Filter subject: ' . $subject_map[$filter_subject];
