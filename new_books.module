@@ -17,9 +17,7 @@ function new_books_help($path, $arg) {
     return t ('New Books module gets, stores, and displays newly acquired books');
   }
 }
-/**
- * Show list of filter options for user
- */
+
 function new_books_show_filter_options() {
   $query = db_select('new_books', 'n');
   $query->fields('n', array(
@@ -30,21 +28,78 @@ function new_books_show_filter_options() {
 
   $simplified_funds = $query->execute();
 
-  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option value="All" data-subject="all">All</option>';
+  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
   foreach ($simplified_funds as $item) {
     $pattern1 = '/[&]/';
     $pattern2 = '/\s+/';
     $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
-    $html .= '<option value="' . htmlspecialchars($item->simplified_fund) . '" data-subject="' . $simplified_subject . '">' . htmlspecialchars($item->simplified_fund) . '</option>';
+    $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
   $html .= '</select>';
+
+  // print $html;
+
+  $query = db_select('new_books_classes', 's');
+  $query->fields('s', array(
+    'class_name',
+    'subclass',
+    'subclass_name',
+  ));
+  $query->addExpression('SUBSTRING(subclass,1,1)', 'subclass_sub');
+  $query->orderBy('subclass', 'ASC');
+
+  $subclasses = $query->execute();
+
+  //print '<pre>'; print_r($subclasses); print '</pre>';
+
+  $html .= '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
+
+  $html .= '<option>A - General Works</option>';
+  $html .= '<option>B - Philosophy, psychology, religion</option>';
+  $html .= '<option>C - Auxiliary sciences of history</option>';
+  $html .= '<option>D - World history and history of Europe, Asia, Africa, Australia, New Zealand, etc.</option>';
+  $html .= '<option>E - History of the Americas</option>';
+  $html .= '<option>F - History of the Americas</option>';
+  $html .= '<option>G - Geography, anthropology, recreation</option>';
+  $html .= '<option>H - Social sciences</option>';
+  $html .= '<option>J - Political science</option>';
+  $html .= '<option>K - Law</option>';
+  $html .= '<option>L - Education</option>';
+  $html .= '<option>M - Music and Books on music</option>';
+  $html .= '<option>N - Fine arts</option>';
+  $html .= '<option>P - Language and literature</option>';
+  $html .= '<option>Q - Science</option>';
+  $html .= '<option>R - Medicine</option>';
+  $html .= '<option>S - Agriculture</option>';
+  $html .= '<option>T - Technology</option>';
+  $html .= '<option>U - Military science</option>';
+  $html .= '<option>V - Naval science</option>';
+  $html .= '<option>Z - Bibliographhy, library science, information resources (general)</option>';
+  $html .= '</select>';
+
+  $html .= '<div class="checkbox">';
+
+  $current_letter = '';
+
+  foreach ($subclasses as $item) {
+    if ($item->subclass_sub !== $current_letter) {
+      $current_letter = $item->subclass_sub;
+      $html .= '</div><div class="options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
+    }
+    //$html .= '<option data-subject=' . $item->subclass_name . '>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</option>';
+    $html .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
+  }
+
+  $html .= '</div><input type="button" name="go" value="go" id="form_submit" />';
+  //$html .= '</select>';
 
   print $html;
 }
 function new_books_page($get_params = null) {
 
   $filter_subject;
+  $filter_class;
 
   $query = db_select('new_books', 'n');
   $query->fields('n', array(
@@ -54,7 +109,16 @@ function new_books_page($get_params = null) {
 
   $simplified_funds = $query->execute();
 
+  $query = db_select('new_books', 'n');
+  $query->fields('n', array(
+    'call_number',
+  ));
+  $query->groupBy('call_number');
+
+  $call_numbers = $query->execute();
+
   $subject_map = array();
+  $class_map   = array();
 
   foreach($simplified_funds as $item) {
     $pattern1 = '/[&]/';
@@ -62,13 +126,25 @@ function new_books_page($get_params = null) {
     $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
     //$subject_map[$item->simplified_fund] = $simplified_subject;
+
     $subject_map[$simplified_subject] = $item->simplified_fund;
+  }
+  foreach($call_numbers as $item) {
+    $class = strtolower($item->call_number);
+
+    // $class_map[$class] = $item->call_number;
+    $class_map[$item->call_number] = $item->call_number;
   }
 
   // print '<pre>'; print_r($subject_map); print '</pre>';
+  // print '<pre>'; print_r($class_map); print '</pre>';
 
-  if ($get_params !== null && !empty($get_params['subject'])) {
-    $filter_subject = $get_params['subject'];
+  if ($get_params !== null) {
+    if (!empty($get_params['subject'])) {
+      $filter_subject = $get_params['subject'];
+    } else if (!empty($get_params['classification'])) {
+      $filter_class = $get_params['classification'];
+    }
   }
   // print 'Filter subject: ' . $subject_map[$filter_subject];
   $num_per_page = 8;
@@ -83,13 +159,46 @@ function new_books_page($get_params = null) {
     'fund_ledger_code',
     'publication_date',
     'simplified_fund',
+    'call_number',
     'img_url',
     'img_path',
   ))->limit($num_per_page);
 
   if (!empty($filter_subject)) {
     if ($filter_subject !== 'all') {
-      $query->condition('simplified_fund', $subject_map[$filter_subject]);
+      $subject_params = explode(',', $filter_subject);
+      
+      if (count($subject_params) > 1) {
+        print '<pre>'; print_r($subject_params); print '</pre>';
+        $or = db_or();
+        for ($i = 0, $length = count($subject_params); $i < $length; $i++) {
+          $or->condition('simplified_fund', $subject_params[$i]);
+        }
+        $query->condition($or);
+      } else {
+        $query->condition('simplified_fund', $subject_map[$filter_subject]);
+      }
+      // $query->condition('simplified_fund', $subject_map[$filter_subject]);
+    }
+  }
+
+  if (!empty($filter_class)) {
+    if ($filter_class === 'unknown') {
+      print '<pre>'; print 'Displaying Unknown items'; print '</pre>';
+      $query->condition('call_number', $class_map['Unknown']);
+    } else if ($filter_class !== 'all') {
+      print '<pre>'; print 'Display: ' . htmlentities($filter_class); print '</pre>';
+      $class_params = explode(',', $filter_class);
+
+      if (count($class_params) > 1) {
+        $or = db_or();
+        for ($i = 0, $size = count($class_params); $i < $size; $i++) {
+          $or->condition('call_number', $class_params[$i]);
+        }
+        $query->condition($or);
+      } else {
+        $query->condition('call_number', $class_map[$filter_class]);
+      }
     }
   }
 
@@ -98,6 +207,8 @@ function new_books_page($get_params = null) {
   $no_book_image = 'https://csun-primo.hosted.exlibrisgroup.com/primo-explore/custom/01CALS_UNO/img/icon_book.png';
 
   $rows = array();
+
+  // print '<pre>'; print_r($results); print '</pre>';
 
   foreach ($results as $row) {
     $row->isbn = explode(';', $row->isbn);
@@ -120,7 +231,7 @@ function new_books_page($get_params = null) {
                 <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
               </p>
               ' . ((!empty($row->author)) ? '<p>' . $row->author . '</p>' : '') . ' 
-              <p>' . $row->publication_date . '</p>
+              <p>' . $row->publication_date . '</p><p>' . $row->simplified_fund . '</p><p>' . $row->call_number . '</p>
             </div>          
           </div>
         </div>
@@ -300,12 +411,158 @@ function new_books_insert_list() {
   }
 }
 
+/**
+ * Functin new_books_insert_latest_list()
+ *
+ *
+ */
+function new_books_insert_latest_list() {
+  $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
+  $filepath = 'public://new_books_thumbnails';
+  $results_array = file_scan_directory($filepath, '/.*\.jpg$/');
+
+  //print '<pre>'; print_r($results_array); print '</pre>';
+
+  // Clear out all thumbnails first, then pull in the new images
+  foreach ($results_array as $k => $v) {
+    $file = $v->uri;
+    file_unmanaged_delete($file);
+  }
+
+  $query_params = array(
+    'path' => 'new-books-combo-ranked',
+  );
+
+  $options = array(
+    'timeout' => 150.0,
+  );
+
+  $full_url = $api_url . '?' . drupal_http_build_query($query_params);
+
+  $response = drupal_http_request($full_url, $options);
+  $json     = json_decode($response->data);
+
+  // Custom fields that need conversion to friendlier column names
+  $zero                  = '0';
+  $simplified_fund_str   = 'replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\')';
+  $simplified_fund_2_str = 'right(fund_ledger_code,_8)';
+  $rank                  = 'rank(po_modification_date)';
+  $report_aggregate      = 'report_aggregate(_rank(po_modificatino_date)_by_mms_id,_title,_fund_ledger_code,__replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\'),_\\\"';
+
+  //print '<pre>'; print_r($json); print '</pre>';
+
+  // Process items if a valid array was returned
+  if (is_array($json->items) && count($json->items) > 0) {
+    // First clear the data from the DB
+    $query = db_truncate('new_books');
+    $query->execute();
+
+    foreach ($json->items as $k => $item) {
+      unset($item->$zero);
+
+      // Use fund ledger code as the item's subject
+      if (!empty($item->fund_ledger_code)) {
+        $item->subject = $item->fund_ledger_code;
+      }
+      // Use PO line type name as the item's media type
+      if (!empty($item->po_line_type_name)) {
+        $item->media_type = $item->po_line_type_name;
+        unset($item->po_line_type_name);
+      }
+      // Rename classification code to call number
+      if (!empty($item->classification_code)) {
+        $item->call_number = $item->classification_code;
+        unset($item->classification_code);
+      }
+      // Shorten PO field names
+      if (!empty($item->po_line_creation_date)) {
+        $item->creation_date = $item->po_line_creation_date;
+        unset($item->po_line_creation_date);
+      }
+      if (!empty($item->po_line_modification_date)) {
+        $item->modification_date = $item->po_line_modification_date;
+        unset($item->po_line_modification_date);
+      }
+      if (!empty($item->po_line_reference)) {
+        $item->line_reference = $item->po_line_reference;
+        unset($item->po_line_reference);
+      }
+
+      // Use friendlier column names
+      if (!empty($item->$simplified_fund_str)) {
+        $item->simplified_fund = $item->$simplified_fund_str;
+        unset($item->$simplified_fund_str);
+      } else {
+        $item->simplified_fund = '';
+        unset($item->$simplified_fund_str);
+      }
+
+      if (!empty($item->$simplified_fund_2_str)) {
+        $item->simplified_fund_2 = $item->$simplified_fund_2_str;
+        unset($item->$simplified_fund_2_str);
+      } else {
+        $item->simplified_fund_2 = '';
+        unset($item->$simplified_fund_2_str);
+      }
+
+      if (!empty($item->$rank)) {
+        $item->rank = $item->$rank;
+        unset($item->$rank);
+      } else {
+        $item->rank = '';
+        unset($item->$rank);
+      }
+
+      if (!empty($item->$report_aggregate)) {
+        $item->report_aggregate = $item->$report_aggregate;
+        unset($item->$report_aggregate);
+      } else {
+        $item->report_aggregate = '';
+        unset($item->$report_aggregate);
+      }
+
+      $img_url       = 'https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $item->isbn[0] . '/SC.JPG&client=primo';
+      $item->img_url = $img_url;
+
+      $rand_string = new_books_random_string($name_length = 8);
+      $filepath    = 'public://new_books_thumbnails/' . $rand_string . '.jpg';
+
+      $image    = file_get_contents($img_url);
+      $file     = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
+      $filepath = '/home/httpd/pages/sites/default/files/new_books_thumbnails/' . $rand_string . '.jpg';
+
+      $item->img_path = $filepath;
+    }
+
+    // Convert object lists into an array
+    foreach ($json->items as $item) {
+      foreach ($item as $k => $obj) {
+        if (is_array($obj)) {
+          $item->$k = implode("; ", $obj);
+        }
+      
+}    }
+
+    $query = db_insert('new_books');
+    $query->fields(array('author', 'isbn', 'publication_date', 'mms_id', 'publisher', 'title', 'fund_ledger_code', 'subject', 'call_number', 'media_type', 'creation_date', 'modification_date', 'line_reference', 'transaction_date', 'vendor_name', 'simplified_fund', 'simplified_fund_2', 'rank', 'report_aggregate', 'img_url', 'img_path'));
+
+    for ($i = 0, $size = count($json->items); $i < $size; $i++) {
+      $query->values(json_decode(json_encode($json->items[$i]), true));
+    }
+
+    $result = $query->execute();
+  } else {
+    print '<p>Unable to process items</p>';
+  }
+}
+
 /*
  * Implements hook_cron()
  */
 
 function new_books_cron() {
-  new_books_insert_list();
+  // new_books_insert_list();
+  new_books_insert_latest_list();
 }
 
 function new_books_random_string($name_length = 8) {
