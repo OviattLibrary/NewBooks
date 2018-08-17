@@ -85,7 +85,7 @@ function new_books_show_filter_options() {
   foreach ($subclasses as $item) {
     if ($item->subclass_sub !== $current_letter) {
       $current_letter = $item->subclass_sub;
-      $html .= '</div><div class="options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
+      $html .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
     }
     //$html .= '<option data-subject=' . $item->subclass_name . '>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</option>';
     $html .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
@@ -223,7 +223,7 @@ function new_books_page($get_params = null) {
           <div class="new-book-item text-center">
             <div style="margin-bottom: 16px;">
               <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank" title="' . $row->title . '">
-                <img src="' . (filesize($row->img_path) < 2000 ? $no_book_image : $row->img_url) . '" alt="" />
+                <img src="' . (!file_exists($row->img_path) || (filesize($row->img_path) < 2000) ? $no_book_image : $row->img_url) . '" alt="" />
               </a>
             </div>
             <div>
