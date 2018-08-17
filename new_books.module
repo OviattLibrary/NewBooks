@@ -447,7 +447,7 @@ function new_books_insert_latest_list() {
   $simplified_fund_str   = 'replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\')';
   $simplified_fund_2_str = 'right(fund_ledger_code,_8)';
   $rank                  = 'rank(po_modification_date)';
-  $report_aggregate      = 'report_aggregate(_rank(po_modificatino_date)_by_mms_id,_title,_fund_ledger_code,__replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\'),_\\\"';
+  $report_aggregate      = 'report_aggregate(_rank(po_modification_date)_by_mms_id,_title,_fund_ledger_code,__replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\'),_\\\"';
 
   //print '<pre>'; print_r($json); print '</pre>';
 
