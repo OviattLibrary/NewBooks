@@ -28,15 +28,20 @@ function new_books_show_filter_options() {
 
   $simplified_funds = $query->execute();
 
-  $html = '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
+  
+
+  // $html .= '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
+  $subjectOptionHtml .= '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
   foreach ($simplified_funds as $item) {
     $pattern1 = '/[&]/';
     $pattern2 = '/\s+/';
     $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
-    $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
+    // $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
+    $subjectOptionHtml .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
-  $html .= '</select>';
+  // $html .= '</select>';
+  $subjectOptionHtml .= '</select>';
 
   // print $html;
 
@@ -53,48 +58,90 @@ function new_books_show_filter_options() {
 
   //print '<pre>'; print_r($subclasses); print '</pre>';
 
-  $html .= '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
+  // $html .= '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
+  $callNumOptionHtml = '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
 
-  $html .= '<option>A - General Works</option>';
-  $html .= '<option>B - Philosophy, psychology, religion</option>';
-  $html .= '<option>C - Auxiliary sciences of history</option>';
-  $html .= '<option>D - World history and history of Europe, Asia, Africa, Australia, New Zealand, etc.</option>';
-  $html .= '<option>E - History of the Americas</option>';
-  $html .= '<option>F - History of the Americas</option>';
-  $html .= '<option>G - Geography, anthropology, recreation</option>';
-  $html .= '<option>H - Social sciences</option>';
-  $html .= '<option>J - Political science</option>';
-  $html .= '<option>K - Law</option>';
-  $html .= '<option>L - Education</option>';
-  $html .= '<option>M - Music and Books on music</option>';
-  $html .= '<option>N - Fine arts</option>';
-  $html .= '<option>P - Language and literature</option>';
-  $html .= '<option>Q - Science</option>';
-  $html .= '<option>R - Medicine</option>';
-  $html .= '<option>S - Agriculture</option>';
-  $html .= '<option>T - Technology</option>';
-  $html .= '<option>U - Military science</option>';
-  $html .= '<option>V - Naval science</option>';
-  $html .= '<option>Z - Bibliographhy, library science, information resources (general)</option>';
-  $html .= '</select>';
+  // $html .= '<option>A - General Works</option>';
+  // $html .= '<option>B - Philosophy, psychology, religion</option>';
+  // $html .= '<option>C - Auxiliary sciences of history</option>';
+  // $html .= '<option>D - World history and history of Europe, Asia, Africa, Australia, New Zealand, etc.</option>';
+  // $html .= '<option>E - History of the Americas</option>';
+  // $html .= '<option>F - History of the Americas</option>';
+  // $html .= '<option>G - Geography, anthropology, recreation</option>';
+  // $html .= '<option>H - Social sciences</option>';
+  // $html .= '<option>J - Political science</option>';
+  // $html .= '<option>K - Law</option>';
+  // $html .= '<option>L - Education</option>';
+  // $html .= '<option>M - Music and Books on music</option>';
+  // $html .= '<option>N - Fine arts</option>';
+  // $html .= '<option>P - Language and literature</option>';
+  // $html .= '<option>Q - Science</option>';
+  // $html .= '<option>R - Medicine</option>';
+  // $html .= '<option>S - Agriculture</option>';
+  // $html .= '<option>T - Technology</option>';
+  // $html .= '<option>U - Military science</option>';
+  // $html .= '<option>V - Naval science</option>';
+  // $html .= '<option>Z - Bibliographhy, library science, information resources (general)</option>';
+  // $html .= '</select>';
 
-  $html .= '<div class="checkbox">';
+  // $html .= '<div class="checkbox">';
+
+  $callNumOptionHtml .= '<option>A - General Works</option>';
+  $callNumOptionHtml .= '<option>B - Philosophy, psychology, religion</option>';
+  $callNumOptionHtml .= '<option>C - Auxiliary sciences of history</option>';
+  $callNumOptionHtml .= '<option>D - World history and history of Europe, Asia, Africa, Australia, New Zealand, etc.</option>';
+  $callNumOptionHtml .= '<option>E - History of the Americas</option>';
+  $callNumOptionHtml .= '<option>F - History of the Americas</option>';
+  $callNumOptionHtml .= '<option>G - Geography, anthropology, recreation</option>';
+  $callNumOptionHtml .= '<option>H - Social sciences</option>';
+  $callNumOptionHtml .= '<option>J - Political science</option>';
+  $callNumOptionHtml .= '<option>K - Law</option>';
+  $callNumOptionHtml .= '<option>L - Education</option>';
+  $callNumOptionHtml .= '<option>M - Music and Books on music</option>';
+  $callNumOptionHtml .= '<option>N - Fine arts</option>';
+  $callNumOptionHtml .= '<option>P - Language and literature</option>';
+  $callNumOptionHtml .= '<option>Q - Science</option>';
+  $callNumOptionHtml .= '<option>R - Medicine</option>';
+  $callNumOptionHtml .= '<option>S - Agriculture</option>';
+  $callNumOptionHtml .= '<option>T - Technology</option>';
+  $callNumOptionHtml .= '<option>U - Military science</option>';
+  $callNumOptionHtml .= '<option>V - Naval science</option>';
+  $callNumOptionHtml .= '<option>Z - Bibliographhy, library science, information resources (general)</option>';
+  $callNumOptionHtml .= '</select>';
+
+  $callNumOptionHtml .= '<div class="checkbox">';
 
   $current_letter = '';
 
   foreach ($subclasses as $item) {
     if ($item->subclass_sub !== $current_letter) {
       $current_letter = $item->subclass_sub;
-      $html .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
+      //$html .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
+      $callNumOptionHtml .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
     }
-    //$html .= '<option data-subject=' . $item->subclass_name . '>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</option>';
-    $html .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
+//    $html .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
+    $callNumOptionHtml .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-psuedo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
   }
 
-  $html .= '</div><input type="button" name="go" value="go" id="form_submit" />';
-  //$html .= '</select>';
+  //$html .= '</div><input type="button" name="go" value="go" id="form_submit" />';
+  $callNumOptionHtml .= '</div><input type="button" name="go" value="go" id="form_submit" />';
 
-  print $html;
+  $pageHtml = '
+  <ul class="nav nav-tabs" role="tablist" id="myTabs">
+    <li role="presentation" class="active"><a href="#subject" aria-controls="home" role="tab" data-toggle="tab">By Subject</a></li>
+    <li role="presentation"><a href="#call_number" aria-controls="profile" role="tab" data-toggle="tab">By Call Number</a></li>
+  </ul>
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="subject">
+      ' . $subjectOptionHtml . '
+    </div>
+    <div role="tabpanel" class="tab-pane" id="call_number">
+      ' . $callNumOptionHtml . '
+    </div>
+  </div>';
+
+  print $pageHtml;
+  //print $html;
 }
 function new_books_page($get_params = null) {
 
