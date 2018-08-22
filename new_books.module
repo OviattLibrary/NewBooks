@@ -28,22 +28,15 @@ function new_books_show_filter_options() {
 
   $simplified_funds = $query->execute();
 
-  
-
-  // $html .= '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
-  $subjectOptionHtml .= '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
+    $subjectOptionHtml .= '<label for="books_dropdown">Filter by subject:</label><select class="form-control" id="books_dropdown"><option>All</option>';
   foreach ($simplified_funds as $item) {
     $pattern1 = '/[&]/';
     $pattern2 = '/\s+/';
     $simplified_subject = preg_replace($pattern1, '', $item->simplified_fund);
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
-    // $html .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
     $subjectOptionHtml .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
-  // $html .= '</select>';
   $subjectOptionHtml .= '</select>';
-
-  // print $html;
 
   $query = db_select('new_books_classes', 's');
   $query->fields('s', array(
@@ -58,33 +51,7 @@ function new_books_show_filter_options() {
 
   //print '<pre>'; print_r($subclasses); print '</pre>';
 
-  // $html .= '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
   $callNumOptionHtml = '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
-
-  // $html .= '<option>A - General Works</option>';
-  // $html .= '<option>B - Philosophy, psychology, religion</option>';
-  // $html .= '<option>C - Auxiliary sciences of history</option>';
-  // $html .= '<option>D - World history and history of Europe, Asia, Africa, Australia, New Zealand, etc.</option>';
-  // $html .= '<option>E - History of the Americas</option>';
-  // $html .= '<option>F - History of the Americas</option>';
-  // $html .= '<option>G - Geography, anthropology, recreation</option>';
-  // $html .= '<option>H - Social sciences</option>';
-  // $html .= '<option>J - Political science</option>';
-  // $html .= '<option>K - Law</option>';
-  // $html .= '<option>L - Education</option>';
-  // $html .= '<option>M - Music and Books on music</option>';
-  // $html .= '<option>N - Fine arts</option>';
-  // $html .= '<option>P - Language and literature</option>';
-  // $html .= '<option>Q - Science</option>';
-  // $html .= '<option>R - Medicine</option>';
-  // $html .= '<option>S - Agriculture</option>';
-  // $html .= '<option>T - Technology</option>';
-  // $html .= '<option>U - Military science</option>';
-  // $html .= '<option>V - Naval science</option>';
-  // $html .= '<option>Z - Bibliographhy, library science, information resources (general)</option>';
-  // $html .= '</select>';
-
-  // $html .= '<div class="checkbox">';
 
   $callNumOptionHtml .= '<option>A - General Works</option>';
   $callNumOptionHtml .= '<option>B - Philosophy, psychology, religion</option>';
@@ -116,14 +83,11 @@ function new_books_show_filter_options() {
   foreach ($subclasses as $item) {
     if ($item->subclass_sub !== $current_letter) {
       $current_letter = $item->subclass_sub;
-      //$html .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
       $callNumOptionHtml .= '</div><div class="options-call-number options-' . strtolower($item->subclass_sub) . '"><p>' . htmlspecialchars($item->subclass_sub) . ' - ' . htmlspecialchars($item->class_name) . '</p>';
     }
-//    $html .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
-    $callNumOptionHtml .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-psuedo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
+    $callNumOptionHtml .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
   }
 
-  //$html .= '</div><input type="button" name="go" value="go" id="form_submit" />';
   $callNumOptionHtml .= '</div><input type="button" name="go" value="go" id="form_submit" />';
 
   $pageHtml = '
@@ -141,7 +105,6 @@ function new_books_show_filter_options() {
   </div>';
 
   print $pageHtml;
-  //print $html;
 }
 function new_books_page($get_params = null) {
 
@@ -231,10 +194,14 @@ function new_books_page($get_params = null) {
 
   if (!empty($filter_class)) {
     if ($filter_class === 'unknown') {
-      print '<pre>'; print 'Displaying Unknown items'; print '</pre>';
+      //print '<pre>'; print 'Displaying Unknown items'; print '</pre>';
+      print '<p class="message-1">Displaying Unknown items</p>';
+
       $query->condition('call_number', $class_map['Unknown']);
     } else if ($filter_class !== 'all') {
-      print '<pre>'; print 'Display: ' . htmlentities($filter_class); print '</pre>';
+      //print '<pre>'; print 'Display: ' . htmlentities($filter_class); print '</pre>';
+      print '<p class="message-1">Display: ' . htmlentities($filter_class) . '</p>';
+
       $class_params = explode(',', $filter_class);
 
       if (count($class_params) > 1) {
