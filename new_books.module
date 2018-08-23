@@ -36,7 +36,7 @@ function new_books_show_filter_options() {
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
     $subjectOptionHtml .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
-  $subjectOptionHtml .= '</select>';
+  $subjectOptionHtml .= '</select><input class="btn btn-warning" type="button" name="Search Subject" value="Search Subject" id="form_submit1" style="margin-top: 16px;"/>';
 
   $query = db_select('new_books_classes', 's');
   $query->fields('s', array(
@@ -51,7 +51,7 @@ function new_books_show_filter_options() {
 
   //print '<pre>'; print_r($subclasses); print '</pre>';
 
-  $callNumOptionHtml = '<label for="class_dropdown">Filter by class:</label><select class="form-control" id="class_dropdown"><option>All</option>';
+  $callNumOptionHtml = '<label for="class_dropdown">Filter by call number:</label><select class="form-control" id="class_dropdown"><option>All</option>';
 
   $callNumOptionHtml .= '<option>A - General Works</option>';
   $callNumOptionHtml .= '<option>B - Philosophy, psychology, religion</option>';
@@ -88,12 +88,12 @@ function new_books_show_filter_options() {
     $callNumOptionHtml .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
   }
 
-  $callNumOptionHtml .= '</div><input type="button" name="go" value="go" id="form_submit" />';
+  $callNumOptionHtml .= '</div><input class="btn btn-warning" type="button" name="Search Call Numbers" value="Search Call Numbers" id="form_submit" style="margin-top: 16px;"/>';
 
   $pageHtml = '
   <ul class="nav nav-tabs" role="tablist" id="myTabs">
-    <li role="presentation" class="active"><a href="#subject" aria-controls="home" role="tab" data-toggle="tab">By Subject</a></li>
-    <li role="presentation"><a href="#call_number" aria-controls="profile" role="tab" data-toggle="tab">By Call Number</a></li>
+    <li role="presentation" class="active"><a href="#subject" aria-controls="home" role="tab" data-toggle="tab" id="filter-new-books-op1">By Subject</a></li>
+    <li role="presentation"><a href="#call_number" aria-controls="profile" role="tab" data-toggle="tab" id="filter-new-books-op2">By Call Number</a></li>
   </ul>
   <div class="tab-content">
     <div role="tabpanel" class="tab-pane active" id="subject">
@@ -179,7 +179,14 @@ function new_books_page($get_params = null) {
       $subject_params = explode(',', $filter_subject);
       
       if (count($subject_params) > 1) {
-        print '<pre>'; print_r($subject_params); print '</pre>';
+        //print '<pre>'; print_r($subject_params); print '</pre>';
+        $myhtml = '<p class="message-1" style="padding: 16px 0; color: #555;">Display: ';
+        foreach ($subject_params as $k => $v) {
+          $myhtml .= $v . ', ';
+        }
+        $myhtml .= '</p>';
+        print $myhtml;
+
         $or = db_or();
         for ($i = 0, $length = count($subject_params); $i < $length; $i++) {
           $or->condition('simplified_fund', $subject_params[$i]);
@@ -195,12 +202,41 @@ function new_books_page($get_params = null) {
   if (!empty($filter_class)) {
     if ($filter_class === 'unknown') {
       //print '<pre>'; print 'Displaying Unknown items'; print '</pre>';
-      print '<p class="message-1">Displaying Unknown items</p>';
+      print '<p class="message-1" style="padding: 16px 0; color: #555;">Displaying: Unknown items</p>';
 
       $query->condition('call_number', $class_map['Unknown']);
     } else if ($filter_class !== 'all') {
-      //print '<pre>'; print 'Display: ' . htmlentities($filter_class); print '</pre>';
-      print '<p class="message-1">Display: ' . htmlentities($filter_class) . '</p>';
+
+      // Do custom query for call numbers
+      $call_number_query = db_select('new_books_classes', 'nb')->fields('nb', array(
+        'subclass',
+        'subclass_name',
+      ));
+      $call_numbers = $call_number_query->execute();
+
+      $classes_array = array();
+
+      // Create associative array using call numbers as keys and actual name as values
+      foreach ($call_numbers as $k2 => $row) {
+        $classes_array[$row->subclass] = $row->subclass_name;
+      }
+
+      // Split URL query params
+      $explode = explode(",", strtoupper($filter_class));
+
+      $the_list = '';
+
+      // Use associative array to create human readable filter results
+      for ($i = 0, $size = count($explode); $i < $size; $i++) {
+        if ($i === $size - 1) {
+          $the_list .= $classes_array[$explode[$i]];
+        } else {
+          $the_list .= $classes_array[$explode[$i]] . ', ';
+        }
+      }
+
+      // print '<p class="message-1" style="padding: 16px 0; color: #555;">Displaying: ' . htmlentities(strtoupper($filter_class)) . '</p>';
+      print '<p class="message-1" style="padding: 16px 0; color: #555;">Displaying: ' . htmlentities($the_list) . '</p>';
 
       $class_params = explode(',', $filter_class);
 
@@ -245,7 +281,7 @@ function new_books_page($get_params = null) {
                 <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
               </p>
               ' . ((!empty($row->author)) ? '<p>' . $row->author . '</p>' : '') . ' 
-              <p>' . $row->publication_date . '</p><p>' . $row->simplified_fund . '</p><p>' . $row->call_number . '</p>
+              <p>' . $row->publication_date . '</p><p>' . $row->simplified_fund . '</p>
             </div>          
           </div>
         </div>
