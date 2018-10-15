@@ -33,6 +33,9 @@
 .*
 ~*
 
+# ignore the following files
+new_books_cron.php
+
 # ignore node/grunt dependency directories
 node_modules/
 
