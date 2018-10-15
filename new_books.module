@@ -36,7 +36,7 @@ function new_books_show_filter_options() {
     $simplified_subject = strtolower(preg_replace($pattern2, '-', $simplified_subject));
     $subjectOptionHtml .= '<option data-subject=' . $simplified_subject . '>' . htmlspecialchars($item->simplified_fund) . '</option>';
   }
-  $subjectOptionHtml .= '</select><input class="btn btn-warning" type="button" name="Search Subject" value="Search Subject" id="form_submit1" style="margin-top: 16px;"/>';
+  $subjectOptionHtml .= '</select><input class="btn btn-warning" type="button" name="Search Subject" value="Search Subject" id="form_submit1" style="margin-top: 16px;"/><button class="btn btn-danger reset_callnums" id="reset_callnums1" style="margin-top: 16px; margin-left: 8px;">Reset</button>';
 
   $query = db_select('new_books_classes', 's');
   $query->fields('s', array(
@@ -88,7 +88,7 @@ function new_books_show_filter_options() {
     $callNumOptionHtml .= '<div class="form-item form-type-checkbox checkbox"><label class="checkbox-inline"><input type="checkbox" class="form-checkbox" name="classifications-' . strtolower($item->subclass_sub) . '[]" value="' . strtolower(htmlspecialchars($item->subclass)) . '"><span class="checkbox-pseudo-icon"></span>' . htmlspecialchars($item->subclass) . ' | ' . htmlspecialchars($item->subclass_name) . '</label></div>';
   }
 
-  $callNumOptionHtml .= '</div><input class="btn btn-warning" type="button" name="Search Call Numbers" value="Search Call Numbers" id="form_submit" style="margin-top: 16px;"/>';
+  $callNumOptionHtml .= '</div><input class="btn btn-warning" type="button" name="Search Call Numbers" value="Search Call Numbers" id="form_submit" style="margin-top: 16px;"/><button class="btn btn-danger reset_callnums" id="reset_callnums2" style="margin-top: 16px; margin-left: 8px;">Reset</button>';
 
   $pageHtml = '
   <ul class="nav nav-tabs" role="tablist" id="myTabs">
@@ -143,7 +143,7 @@ function new_books_page($get_params = null) {
     $class = strtolower($item->call_number);
 
     // $class_map[$class] = $item->call_number;
-    $class_map[$item->call_number] = $item->call_number;
+    $class_map[strtolower($item->call_number)] = $item->call_number;
   }
 
   // print '<pre>'; print_r($subject_map); print '</pre>';
@@ -239,6 +239,7 @@ function new_books_page($get_params = null) {
       print '<p class="message-1" style="padding: 16px 0; color: #555;">Displaying: ' . htmlentities($the_list) . '</p>';
 
       $class_params = explode(',', $filter_class);
+      //print '<pre>'; print_r($class_params); print '</pre>';
 
       if (count($class_params) > 1) {
         $or = db_or();
@@ -247,6 +248,7 @@ function new_books_page($get_params = null) {
         }
         $query->condition($or);
       } else {
+        //print '<pre>'; print $filter_class; print '</pre>';
         $query->condition('call_number', $class_map[$filter_class]);
       }
     }
@@ -281,7 +283,7 @@ function new_books_page($get_params = null) {
                 <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank">' . $row->title . '</a>
               </p>
               ' . ((!empty($row->author)) ? '<p>' . $row->author . '</p>' : '') . ' 
-              <p>' . $row->publication_date . '</p><p>' . $row->simplified_fund . '</p>
+              <p>' . $row->publication_date . '</p><p>' . $row->simplified_fund . '</p><p>' . $row->call_number . '</p>
             </div>          
           </div>
         </div>
@@ -612,7 +614,7 @@ function new_books_insert_latest_list() {
 
 function new_books_cron() {
   // new_books_insert_list();
-  new_books_insert_latest_list();
+  //new_books_insert_latest_list();
 }
 
 function new_books_random_string($name_length = 8) {
