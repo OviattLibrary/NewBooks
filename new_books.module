@@ -610,11 +610,19 @@ function new_books_insert_latest_list() {
 
 /*
  * Implements hook_cron()
+ * Currently disabled as it takes too long to complete and halts other maintenance cron tasks
+ * Instead, created custom cron function below that gets called manually outside regular drupal cron
  */
 
 function new_books_cron() {
-  // new_books_insert_list();
   //new_books_insert_latest_list();
+}
+/*
+ * Implements custom cron function
+ * This gets called through crontab instead to avoid halting regular drupal cron
+ */
+function new_books_custom_cron() {
+  new_books_insert_latest_list();
 }
 
 function new_books_random_string($name_length = 8) {
