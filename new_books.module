@@ -325,7 +325,7 @@ function new_books_theme() {
  * Function new_books_insert_list()
  *
  * Calls books API to get a list of newly acquired books.
- * Stores the results into the database.
+ * Stores the results into the database. (Not being used now)
  */
 function new_books_insert_list() {
   
@@ -464,44 +464,38 @@ function new_books_insert_list() {
 }
 
 /**
- * Functin new_books_insert_latest_list()
+ * Function new_books_insert_latest_list()
  *
- *
+ * Obtain list of new books to store the data in DB and place thumbnail images in
+ * the corresponding folder.
  */
 function new_books_insert_latest_list() {
-  $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
-  $filepath = 'public://new_books_thumbnails';
-  $results_array = file_scan_directory($filepath, '/.*\.jpg$/');
+  $api_url       = 'https://librarydev.csun.edu/oviattphp/new-books/api/new-books.php';
+  $filepath      = 'public://new_books_thumbnails/';
+  $results_array = file_scan_directory($filepath, '/.*\.jpg$/');  // Obtain current thumbnails
 
   //print '<pre>'; print_r($results_array); print '</pre>';
-
-  // Clear out all thumbnails first, then pull in the new images
-  foreach ($results_array as $k => $v) {
-    $file = $v->uri;
-    file_unmanaged_delete($file);
-  }
-
+  // Configure URL request options
+  // Specify the API to call
   $query_params = array(
     'path' => 'new-books-combo-ranked',
   );
-
+  // Timeout for API call
   $options = array(
     'timeout' => 150.0,
   );
-
+  // Build and obtain JSON data
   $full_url = $api_url . '?' . drupal_http_build_query($query_params);
 
   $response = drupal_http_request($full_url, $options);
   $json     = json_decode($response->data);
 
-  // Custom fields that need conversion to friendlier column names
+  // Custom fields in returned report that need conversion to friendlier column names
   $zero                  = '0';
   $simplified_fund_str   = 'replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\')';
   $simplified_fund_2_str = 'right(fund_ledger_code,_8)';
   $rank                  = 'rank(po_modification_date)';
   $report_aggregate      = 'report_aggregate(_rank(po_modification_date)_by_mms_id,_title,_fund_ledger_code,__replace(fund_ledger_code,__right(fund_ledger_code,_8),_\'\'),_\\\"';
-
-  //print '<pre>'; print_r($json); print '</pre>';
 
   // Process items if a valid array was returned
   if (is_array($json->items) && count($json->items) > 0) {
@@ -509,14 +503,22 @@ function new_books_insert_latest_list() {
     $query = db_truncate('new_books');
     $query->execute();
 
+    // Now clear out all thumbnails before pulling in new images
+    foreach ($results_array as $k => $v) {
+      $file = $v->uri;
+      file_unmanaged_delete($file);
+    }
+    // Go through data and use friendlier column names if that field exists
+    // E.g. Instead of 'rank(po_modification_date)' change to rank or $item->rank
     foreach ($json->items as $k => $item) {
-      unset($item->$zero);
+      unset($item->$zero);  // No need for this column from report, so remove/unset it
 
       // Use fund ledger code as the item's subject
       if (!empty($item->fund_ledger_code)) {
         $item->subject = $item->fund_ledger_code;
       }
       // Use PO line type name as the item's media type
+      // And now no need to keep po_line_type_name in data so remove/unset
       if (!empty($item->po_line_type_name)) {
         $item->media_type = $item->po_line_type_name;
         unset($item->po_line_type_name);
@@ -540,7 +542,7 @@ function new_books_insert_latest_list() {
         unset($item->po_line_reference);
       }
 
-      // Use friendlier column names
+      // Simplified_fund should be present, if no data exists, set it to empty string
       if (!empty($item->$simplified_fund_str)) {
         $item->simplified_fund = $item->$simplified_fund_str;
         unset($item->$simplified_fund_str);
@@ -572,15 +574,17 @@ function new_books_insert_latest_list() {
         $item->report_aggregate = '';
         unset($item->$report_aggregate);
       }
-
+      // Create image URL and save in data
       $img_url       = 'https://proxy-na.hosted.exlibrisgroup.com/exl_rewrite/syndetics.com/index.aspx?isbn=' . $item->isbn[0] . '/SC.JPG&client=primo';
       $item->img_url = $img_url;
-
+      // Create random file name for image and set path to store thumbnails
       $rand_string = new_books_random_string($name_length = 8);
       $filepath    = 'public://new_books_thumbnails/' . $rand_string . '.jpg';
-
+      // Fetch image and change to Drupal directory to give permission to write to thumbnails folder
       $image    = file_get_contents($img_url);
+      chdir(DRUPAL_ROOT);
       $file     = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
+      // Store the image's absolute path in DB for easier fetching
       $filepath = '/home/httpd/pages/sites/default/files/new_books_thumbnails/' . $rand_string . '.jpg';
 
       $item->img_path = $filepath;
@@ -592,18 +596,18 @@ function new_books_insert_latest_list() {
         if (is_array($obj)) {
           $item->$k = implode("; ", $obj);
         }
-      
-}    }
-
+      }
+    }
+    // Now store $item data into corresponding DB fields (names should match e.g. $item->rank goes with 'rank')
     $query = db_insert('new_books');
     $query->fields(array('author', 'isbn', 'publication_date', 'mms_id', 'publisher', 'title', 'fund_ledger_code', 'subject', 'call_number', 'media_type', 'creation_date', 'modification_date', 'line_reference', 'transaction_date', 'vendor_name', 'simplified_fund', 'simplified_fund_2', 'rank', 'report_aggregate', 'img_url', 'img_path'));
-
+    // Prepare the values to store
     for ($i = 0, $size = count($json->items); $i < $size; $i++) {
       $query->values(json_decode(json_encode($json->items[$i]), true));
     }
 
     $result = $query->execute();
-  } else {
+  } else {  // If no valid report data was returned
     print '<p>Unable to process items</p>';
   }
 }
