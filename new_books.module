@@ -470,11 +470,15 @@ function new_books_insert_list() {
  * the corresponding folder.
  */
 function new_books_insert_latest_list() {
+  // Change directory so that the drupal functions work properly with correct permissions (read/delete files)
+  chdir(DRUPAL_ROOT);
+
   $api_url       = 'https://library.csun.edu/oviattphp/new-books/api/new-books.php';
   $filepath      = 'public://new_books_thumbnails/';
   $results_array = file_scan_directory($filepath, '/.*\.jpg$/');  // Obtain current thumbnails
 
   //print '<pre>'; print_r($results_array); print '</pre>';
+  
   // Configure URL request options
   // Specify the API to call
   $query_params = array(
@@ -508,6 +512,7 @@ function new_books_insert_latest_list() {
       $file = $v->uri;
       file_unmanaged_delete($file);
     }
+    
     // Go through data and use friendlier column names if that field exists
     // E.g. Instead of 'rank(po_modification_date)' change to rank or $item->rank
     foreach ($json->items as $k => $item) {
@@ -580,9 +585,8 @@ function new_books_insert_latest_list() {
       // Create random file name for image and set path to store thumbnails
       $rand_string = new_books_random_string($name_length = 8);
       $filepath    = 'public://new_books_thumbnails/' . $rand_string . '.jpg';
-      // Fetch image and change to Drupal directory to give permission to write to thumbnails folder
+      // Fetch and store image
       $image    = file_get_contents($img_url);
-      chdir(DRUPAL_ROOT);
       $file     = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
       // Store the image's absolute path in DB for easier fetching
       $filepath = '/home/httpd/pages/sites/default/files/new_books_thumbnails/' . $rand_string . '.jpg';
