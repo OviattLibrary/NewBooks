@@ -329,7 +329,7 @@ function new_books_theme() {
  */
 function new_books_insert_list() {
   
-  $api_url = "https://library7.csun.edu/oviattphp/new-books/api/new-books.php";
+  $api_url = "https://library.csun.edu/oviattphp/new-books/api/new-books.php";
   $filepath = 'public://new_books_thumbnails';
   $results_array = file_scan_directory($filepath, '/.*\.jpg$/');
 
@@ -347,7 +347,7 @@ function new_books_insert_list() {
   //$file = file_save_data($image, $filepath, FILE_EXISTS_REPLACE);
   //$loaded_image = image_load($filepath);
   //$thumb_image = $loaded_image;
-  //$filepath = 'https://library7.csun.edu/';
+  //$filepath = 'https://library.csun.edu/';
 
   //print '<img class="img-responsive" src="' . file_create_url($filepath) . '" alt="book_cover" >';
 
@@ -470,7 +470,7 @@ function new_books_insert_list() {
  * the corresponding folder.
  */
 function new_books_insert_latest_list() {
-  $api_url       = 'https://librarydev.csun.edu/oviattphp/new-books/api/new-books.php';
+  $api_url       = 'https://library.csun.edu/oviattphp/new-books/api/new-books.php';
   $filepath      = 'public://new_books_thumbnails/';
   $results_array = file_scan_directory($filepath, '/.*\.jpg$/');  // Obtain current thumbnails
 
