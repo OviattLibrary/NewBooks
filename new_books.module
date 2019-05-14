@@ -275,7 +275,7 @@ function new_books_page($get_params = null) {
           <div class="new-book-item text-center">
             <div style="margin-bottom: 16px;">
               <a href="https://csun-primo.hosted.exlibrisgroup.com/primo-explore/search?query=any,exact,' . $row->mms_id . '&tab=everything&search_scope=EVERYTHING&vid=01CALS_UNO&facet=rtype,include,books&offset=0" target="_blank" title="' . $row->title . '">
-                <img src="' . (!file_exists($row->img_path) || (filesize($row->img_path) < 2000) ? $no_book_image : $row->img_url) . '" alt="" />
+                <img src="' . (!file_exists($row->img_path) || (filesize($row->img_path) < 2000) ? $no_book_image : $row->img_url) . '" alt="' . substr($row->title, 0, 60) . '" />
               </a>
             </div>
             <div>
