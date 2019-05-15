@@ -599,6 +599,8 @@ function new_books_insert_latest_list() {
       foreach ($item as $k => $obj) {
         if (is_array($obj)) {
           $item->$k = implode("; ", $obj);
+        } else if (is_object($obj)) {
+          $item->$k = implode("; ", (array) $obj);
         }
       }
     }
@@ -614,6 +616,16 @@ function new_books_insert_latest_list() {
   } else {  // If no valid report data was returned
     print '<p>Unable to process items</p>';
   }
+}
+
+/*
+ * new_books_insert_latest_list_test()
+ * Use this function for testing out or debugging the main new_books_insert_latest_list()
+ * All code within can be deleted or modified as necessary
+ */
+
+function new_books_insert_latest_list_test() {
+  
 }
 
 /*
