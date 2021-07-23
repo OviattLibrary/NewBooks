@@ -298,7 +298,7 @@ function new_books_insert_latest_list() {
   // Change directory so that the drupal functions work properly with correct permissions (read/delete files)
   chdir(DRUPAL_ROOT);
 
-  $api_url       = 'https://librarydev.csun.edu/oviattphp/new-books/api/new-books.php';
+  $api_url       = 'https://library.csun.edu/oviattphp/new-books/api/new-books.php';
   $filepath      = 'public://new_books_thumbnails/';
   $results_array = file_scan_directory($filepath, '/.*\.jpg$/');  // Obtain current thumbnails
   
